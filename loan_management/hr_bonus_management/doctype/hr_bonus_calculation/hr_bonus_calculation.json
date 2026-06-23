@@ -1,0 +1,158 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "naming_series:",
+ "creation": "2026-06-19 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "department",
+  "company",
+  "as_on_date",
+  "column_break_1",
+  "bonus_percentage",
+  "minimum_months_required",
+  "full_bonus_months",
+  "section_break_1",
+  "employees",
+  "section_break_2",
+  "total_employees",
+  "column_break_2",
+  "total_bonus_amount"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "HR-BONUS-.YYYY.-",
+   "default": "HR-BONUS-.YYYY.-",
+   "reqd": 1
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "label": "Department",
+   "options": "Department",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "fetch_from": "department.company",
+   "read_only": 1
+  },
+  {
+   "fieldname": "as_on_date",
+   "fieldtype": "Date",
+   "label": "Calculate As On Date",
+   "default": "Today",
+   "reqd": 1,
+   "description": "Service duration for every employee is measured from their Date of Joining up to this date"
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "bonus_percentage",
+   "fieldtype": "Percent",
+   "label": "Bonus Percentage (of Basic Salary)",
+   "default": "85"
+  },
+  {
+   "fieldname": "minimum_months_required",
+   "fieldtype": "Int",
+   "label": "Minimum Months of Service Required",
+   "default": "3",
+   "description": "Employees with less service than this get no bonus"
+  },
+  {
+   "fieldname": "full_bonus_months",
+   "fieldtype": "Int",
+   "label": "Months Required for Full Bonus",
+   "default": "12",
+   "description": "Service duration at or beyond which the full bonus percentage applies"
+  },
+  {
+   "fieldname": "section_break_1",
+   "fieldtype": "Section Break",
+   "label": "Employees"
+  },
+  {
+   "fieldname": "employees",
+   "fieldtype": "Table",
+   "label": "Employees",
+   "options": "HR Bonus Calculation Employee"
+  },
+  {
+   "fieldname": "section_break_2",
+   "fieldtype": "Section Break",
+   "label": "Summary"
+  },
+  {
+   "fieldname": "total_employees",
+   "fieldtype": "Int",
+   "label": "Total Employees",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_bonus_amount",
+   "fieldtype": "Currency",
+   "label": "Total Bonus Amount",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "module": "HR Bonus Management",
+ "name": "HR Bonus Calculation",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR User"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

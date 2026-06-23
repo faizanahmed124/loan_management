@@ -7,6 +7,21 @@ app_license = "mit"
 
 # Apps
 # ------------------
+# -----------------------------------------------------------------------------
+# 1. Required apps - tells bench this app depends on HRMS being installed first
+# required_apps = ["hrms"]
+
+required_apps = ["hrms"]
+
+after_install = "loan_management.install.after_install"
+
+doc_events = {
+	"Salary Slip": {
+		"validate": "loan_management.utils.add_loan_deductions",
+		"on_submit": "loan_management.utils.mark_loan_repayments_paid",
+		"on_cancel": "loan_management.utils.unmark_loan_repayments_paid",
+	}
+}
 
 # required_apps = []
 
