@@ -11,7 +11,9 @@
   "basic_salary",
   "duration_months",
   "eligible",
-  "bonus_amount"
+  "bonus_amount",
+  "loan_deduction",
+  "net_bonus"
  ],
  "fields": [
   {
@@ -41,14 +43,14 @@
   {
    "fieldname": "basic_salary",
    "fieldtype": "Currency",
-   "label": "Basic Salary",
+   "label": "CTC / Gross Pay",
    "in_list_view": 1,
-   "description": "Auto-fetched from active Salary Structure Assignment; editable if needed"
+   "description": "Auto-fetched from Employee CTC field; editable if needed"
   },
   {
    "fieldname": "duration_months",
    "fieldtype": "Int",
-   "label": "Service Duration (Months)",
+   "label": "Service (Months, max 12)",
    "read_only": 1,
    "in_list_view": 1
   },
@@ -62,7 +64,22 @@
   {
    "fieldname": "bonus_amount",
    "fieldtype": "Currency",
-   "label": "Bonus Amount",
+   "label": "Gross Bonus",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "loan_deduction",
+   "fieldtype": "Currency",
+   "label": "Loan Deduction",
+   "read_only": 1,
+   "in_list_view": 1,
+   "description": "Active HR Loan with 'From Bonus' source — deducted from gross bonus"
+  },
+  {
+   "fieldname": "net_bonus",
+   "fieldtype": "Currency",
+   "label": "Net Bonus Payable",
    "read_only": 1,
    "in_list_view": 1
   }

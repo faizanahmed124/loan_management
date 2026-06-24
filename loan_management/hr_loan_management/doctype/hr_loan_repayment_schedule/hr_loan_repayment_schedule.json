@@ -44,7 +44,8 @@
    "fieldname": "balance_loan_amount",
    "fieldtype": "Currency",
    "label": "Balance After Payment",
-   "in_list_view": 1
+   "in_list_view": 1,
+   "read_only": 1
   },
   {
    "fieldname": "is_paid",

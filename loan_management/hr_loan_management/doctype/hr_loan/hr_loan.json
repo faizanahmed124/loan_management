@@ -16,6 +16,7 @@
   "loan_amount",
   "rate_of_interest",
   "repayment_periods",
+  "loan_source",
   "section_break_1",
   "monthly_repayment_amount",
   "total_interest_payable",
@@ -29,143 +30,28 @@
   "repayment_schedule"
  ],
  "fields": [
-  {
-   "fieldname": "naming_series",
-   "fieldtype": "Select",
-   "label": "Series",
-   "options": "HR-LOAN-.YYYY.-",
-   "default": "HR-LOAN-.YYYY.-",
-   "reqd": 1
-  },
-  {
-   "fieldname": "employee",
-   "fieldtype": "Link",
-   "label": "Employee",
-   "options": "Employee",
-   "reqd": 1,
-   "in_list_view": 1,
-   "in_standard_filter": 1
-  },
-  {
-   "fieldname": "employee_name",
-   "fieldtype": "Data",
-   "label": "Employee Name",
-   "fetch_from": "employee.employee_name",
-   "read_only": 1,
-   "in_list_view": 1
-  },
-  {
-   "fieldname": "loan_application",
-   "fieldtype": "Link",
-   "label": "Loan Application",
-   "options": "HR Loan Application",
-   "read_only": 1
-  },
-  {
-   "fieldname": "company",
-   "fieldtype": "Link",
-   "label": "Company",
-   "options": "Company",
-   "reqd": 1,
-   "fetch_from": "employee.company"
-  },
-  {
-   "fieldname": "column_break_1",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "loan_type",
-   "fieldtype": "Link",
-   "label": "Loan Type",
-   "options": "HR Loan Type",
-   "reqd": 1,
-   "in_list_view": 1
-  },
-  {
-   "fieldname": "loan_amount",
-   "fieldtype": "Currency",
-   "label": "Loan Amount",
-   "reqd": 1,
-   "in_list_view": 1
-  },
-  {
-   "fieldname": "rate_of_interest",
-   "fieldtype": "Percent",
-   "label": "Rate of Interest (Yearly %)"
-  },
-  {
-   "fieldname": "repayment_periods",
-   "fieldtype": "Int",
-   "label": "Repayment Periods (Months)",
-   "reqd": 1
-  },
-  {
-   "fieldname": "section_break_1",
-   "fieldtype": "Section Break",
-   "label": "Repayment Summary"
-  },
-  {
-   "fieldname": "monthly_repayment_amount",
-   "fieldtype": "Currency",
-   "label": "Monthly Repayment (EMI)",
-   "read_only": 1
-  },
-  {
-   "fieldname": "total_interest_payable",
-   "fieldtype": "Currency",
-   "label": "Total Interest Payable",
-   "read_only": 1
-  },
-  {
-   "fieldname": "total_payable_amount",
-   "fieldtype": "Currency",
-   "label": "Total Payable Amount",
-   "read_only": 1
-  },
-  {
-   "fieldname": "column_break_2",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "total_amount_paid",
-   "fieldtype": "Currency",
-   "label": "Total Amount Paid",
-   "read_only": 1,
-   "default": "0"
-  },
-  {
-   "fieldname": "balance_amount",
-   "fieldtype": "Currency",
-   "label": "Balance Amount",
-   "read_only": 1
-  },
-  {
-   "fieldname": "disbursement_date",
-   "fieldtype": "Date",
-   "label": "Disbursement Date"
-  },
-  {
-   "fieldname": "status",
-   "fieldtype": "Select",
-   "label": "Status",
-   "options": "Sanctioned\nDisbursed\nClosed\nCancelled",
-   "default": "Sanctioned",
-   "read_only": 1,
-   "in_list_view": 1,
-   "in_standard_filter": 1
-  },
-  {
-   "fieldname": "section_break_2",
-   "fieldtype": "Section Break",
-   "label": "Repayment Schedule"
-  },
-  {
-   "fieldname": "repayment_schedule",
-   "fieldtype": "Table",
-   "label": "Repayment Schedule",
-   "options": "HR Loan Repayment Schedule",
-   "read_only": 1
-  }
+  {"fieldname": "naming_series", "fieldtype": "Select", "label": "Series", "options": "HR-LOAN-.YYYY.-", "default": "HR-LOAN-.YYYY.-", "reqd": 1},
+  {"fieldname": "employee", "fieldtype": "Link", "label": "Employee", "options": "Employee", "reqd": 1, "in_list_view": 1, "in_standard_filter": 1},
+  {"fieldname": "employee_name", "fieldtype": "Data", "label": "Employee Name", "fetch_from": "employee.employee_name", "read_only": 1, "in_list_view": 1},
+  {"fieldname": "loan_application", "fieldtype": "Link", "label": "Loan Application", "options": "HR Loan Application", "read_only": 1},
+  {"fieldname": "company", "fieldtype": "Link", "label": "Company", "options": "Company", "reqd": 1, "fetch_from": "employee.company"},
+  {"fieldname": "column_break_1", "fieldtype": "Column Break"},
+  {"fieldname": "loan_type", "fieldtype": "Link", "label": "Loan Type", "options": "HR Loan Type", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "loan_amount", "fieldtype": "Currency", "label": "Loan Amount", "reqd": 1, "in_list_view": 1},
+  {"fieldname": "rate_of_interest", "fieldtype": "Percent", "label": "Rate of Interest (Yearly %)"},
+  {"fieldname": "repayment_periods", "fieldtype": "Int", "label": "Repayment Periods (Months)", "reqd": 1},
+  {"fieldname": "loan_source", "fieldtype": "Select", "label": "Repayment / Deduction Source", "options": "Salary\nBonus\nGratuity", "default": "Salary", "read_only": 1, "in_list_view": 1, "in_standard_filter": 1},
+  {"fieldname": "section_break_1", "fieldtype": "Section Break", "label": "Repayment Summary"},
+  {"fieldname": "monthly_repayment_amount", "fieldtype": "Currency", "label": "Monthly Repayment (EMI)", "read_only": 1},
+  {"fieldname": "total_interest_payable", "fieldtype": "Currency", "label": "Total Interest Payable", "read_only": 1},
+  {"fieldname": "total_payable_amount", "fieldtype": "Currency", "label": "Total Payable Amount", "read_only": 1},
+  {"fieldname": "column_break_2", "fieldtype": "Column Break"},
+  {"fieldname": "total_amount_paid", "fieldtype": "Currency", "label": "Total Amount Paid", "read_only": 1, "default": "0"},
+  {"fieldname": "balance_amount", "fieldtype": "Currency", "label": "Balance Amount", "read_only": 1},
+  {"fieldname": "disbursement_date", "fieldtype": "Date", "label": "Disbursement Date"},
+  {"fieldname": "status", "fieldtype": "Select", "label": "Status", "options": "Sanctioned\nDisbursed\nClosed\nCancelled", "default": "Sanctioned", "read_only": 1, "in_list_view": 1, "in_standard_filter": 1},
+  {"fieldname": "section_break_2", "fieldtype": "Section Break", "label": "Repayment Schedule"},
+  {"fieldname": "repayment_schedule", "fieldtype": "Table", "label": "Repayment Schedule", "options": "HR Loan Repayment Schedule"}
  ],
  "index_web_pages_for_search": 1,
  "links": [],
@@ -174,42 +60,10 @@
  "naming_rule": "By \"Naming Series\" field",
  "owner": "Administrator",
  "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "System Manager",
-   "share": 1,
-   "write": 1
-  },
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "HR Manager",
-   "share": 1,
-   "write": 1
-  },
-  {
-   "email": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "HR User"
-  },
-  {
-   "if_owner": 1,
-   "read": 1,
-   "role": "Employee"
-  }
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "System Manager", "share": 1, "write": 1},
+  {"create": 1, "delete": 1, "email": 1, "export": 1, "print": 1, "read": 1, "report": 1, "role": "HR Manager", "share": 1, "write": 1},
+  {"email": 1, "print": 1, "read": 1, "report": 1, "role": "HR User"},
+  {"if_owner": 1, "read": 1, "role": "Employee"}
  ],
  "sort_field": "modified",
  "sort_order": "DESC",

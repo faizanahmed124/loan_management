@@ -1,11 +1,9 @@
 # Copyright (c) 2026, Your Company and contributors
 # For license information, please see license.txt
 """
-Hooks into HRMS Salary Slip lifecycle to automatically:
-1. Add the due EMI for any active employee HR Loan as a deduction row (on validate).
-2. Mark the corresponding HR Loan Repayment Schedule row as paid, and close the
-   HR Loan once fully repaid (on submit).
-3. Reverse that marking if the Salary Slip is cancelled.
+Salary Slip lifecycle hooks:
+- Salary / Gratuity loans  → monthly EMI auto-deducted from Salary Slip
+- Bonus loans              → NOT deducted from Salary Slip (handled via HR Bonus Calculation)
 """
 
 import frappe
@@ -13,40 +11,37 @@ from frappe.utils import flt
 
 LOAN_DEDUCTION_COMPONENT = "Loan EMI Deduction"
 
+# loan_source values that should trigger a salary deduction
+SALARY_REPAYMENT_SOURCES = ("Salary", "Gratuity")
+
 
 def add_loan_deductions(doc, method=None):
-	"""Salary Slip validate hook: pull in any EMI due for this payroll period."""
+	"""Salary Slip validate hook: add EMI deduction for Salary/Gratuity loans."""
 	if not doc.employee:
 		return
 
 	due_amount, due_rows = _get_due_installments(doc.employee, doc.start_date, doc.end_date)
-
 	if not due_amount:
 		return
 
 	if not frappe.db.exists("Salary Component", LOAN_DEDUCTION_COMPONENT):
 		_create_loan_salary_component()
 
-	existing_row = None
-	for row in doc.deductions:
-		if row.salary_component == LOAN_DEDUCTION_COMPONENT:
-			existing_row = row
-			break
+	existing_row = next(
+		(r for r in doc.deductions if r.salary_component == LOAN_DEDUCTION_COMPONENT), None
+	)
 
 	if existing_row:
 		existing_row.amount = due_amount
 	else:
-		doc.append(
-			"deductions",
-			{
-				"salary_component": LOAN_DEDUCTION_COMPONENT,
-				"amount": due_amount,
-			},
-		)
+		doc.append("deductions", {
+			"salary_component": LOAN_DEDUCTION_COMPONENT,
+			"amount": due_amount,
+		})
 
 
 def mark_loan_repayments_paid(doc, method=None):
-	"""Salary Slip on_submit hook: settle the matched installment rows."""
+	"""Salary Slip on_submit hook: settle matched installment rows."""
 	if not doc.employee:
 		return
 
@@ -71,12 +66,18 @@ def mark_loan_repayments_paid(doc, method=None):
 
 
 def unmark_loan_repayments_paid(doc, method=None):
-	"""Salary Slip on_cancel hook: reverse the settlement if the slip is cancelled."""
+	"""Salary Slip on_cancel hook: reverse the settlement."""
 	if not doc.employee:
 		return
 
 	loans = frappe.get_all(
-		"HR Loan", filters={"employee": doc.employee, "status": ["in", ["Disbursed", "Closed"]]}, pluck="name"
+		"HR Loan",
+		filters={
+			"employee": doc.employee,
+			"status": ["in", ["Disbursed", "Closed"]],
+			"loan_source": ["in", list(SALARY_REPAYMENT_SOURCES)],
+		},
+		pluck="name",
 	)
 
 	for loan_name in loans:
@@ -97,10 +98,16 @@ def unmark_loan_repayments_paid(doc, method=None):
 
 
 def _get_due_installments(employee, start_date, end_date):
-	"""Find unpaid installments across the employee's active loans whose
-	payment_date falls within this payroll period. Returns (total_amount, [(loan, row_name), ...])
-	"""
-	loans = frappe.get_all("HR Loan", filters={"employee": employee, "status": "Disbursed"}, pluck="name")
+	"""Return (total_amount, [(loan_name, row_name), ...]) for Salary/Gratuity loans only."""
+	loans = frappe.get_all(
+		"HR Loan",
+		filters={
+			"employee": employee,
+			"status": "Disbursed",
+			"loan_source": ["in", list(SALARY_REPAYMENT_SOURCES)],
+		},
+		pluck="name",
+	)
 
 	total = 0.0
 	rows = []
@@ -127,5 +134,5 @@ def _create_loan_salary_component():
 	component = frappe.new_doc("Salary Component")
 	component.salary_component = LOAN_DEDUCTION_COMPONENT
 	component.type = "Deduction"
-	component.description = "Auto-created by the HR Loan app for employee loan EMI deductions."
+	component.description = "Auto-created by HR Loan app for employee loan EMI deductions."
 	component.insert(ignore_permissions=True)
