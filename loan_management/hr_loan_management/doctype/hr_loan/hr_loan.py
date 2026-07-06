@@ -1,6 +1,7 @@
 # Copyright (c) 2026, Your Company and contributors
 # For license information, please see license.txt
 
+import math
 import frappe
 from frappe import _
 from frappe.model.document import Document
@@ -15,64 +16,164 @@ class HRLoan(Document):
 	def on_trash(self):
 		if self.loan_application and frappe.db.exists("HR Loan Application", self.loan_application):
 			frappe.db.set_value("HR Loan Application", self.loan_application, "loan", None)
+		# Cancel linked JE if any
+		if self.disbursement_journal_entry:
+			cancel_journal_entry(self.disbursement_journal_entry)
 
 	def calculate_repayment_summary(self):
-		n = cint(self.repayment_periods)
-		principal = flt(self.loan_amount)
-		if not n or not principal:
+		loan = flt(self.loan_amount)
+		inst = flt(self.monthly_installment_amount)
+		if not loan or not inst:
 			return
-		monthly_rate = flt(self.rate_of_interest) / 100 / 12
-		if monthly_rate:
-			emi = (principal * monthly_rate * (1 + monthly_rate) ** n) / (((1 + monthly_rate) ** n) - 1)
-		else:
-			emi = principal / n
-		emi = flt(emi, 2)
-		self.monthly_repayment_amount = emi
-		self.total_payable_amount     = flt(emi * n, 2)
-		self.total_interest_payable   = flt(self.total_payable_amount - principal, 2)
+		self.repayment_periods        = math.ceil(loan / inst)
+		self.monthly_repayment_amount = inst
+		self.total_payable_amount     = flt(loan, 2)
+		self.total_interest_payable   = 0
 
 	def generate_repayment_schedule(self):
 		self.set("repayment_schedule", [])
-		monthly_rate = flt(self.rate_of_interest) / 100 / 12
-		balance      = flt(self.loan_amount)
-		n            = cint(self.repayment_periods)
-		emi          = flt(self.monthly_repayment_amount)
-		for i in range(1, n + 1):
-			interest_amount  = flt(balance * monthly_rate, 2)
-			principal_amount = flt(emi - interest_amount, 2)
-			if i == n:
-				principal_amount = balance
-			total_payment = flt(principal_amount + interest_amount, 2)
-			balance       = flt(balance - principal_amount, 2)
+		loan    = flt(self.loan_amount)
+		inst    = flt(self.monthly_installment_amount)
+		if not loan or not inst:
+			return
+		balance = loan
+		month   = 0
+		while balance > 0:
+			month        += 1
+			payment       = flt(min(inst, balance), 2)
+			balance       = flt(balance - payment, 2)
 			self.append("repayment_schedule", {
-				"payment_date":       add_months(self.disbursement_date, i),
-				"principal_amount":   principal_amount,
-				"interest_amount":    interest_amount,
-				"total_payment":      total_payment,
-				"balance_loan_amount": balance,
+				"payment_date":        add_months(self.disbursement_date, month),
+				"principal_amount":    payment,
+				"interest_amount":     0,
+				"total_payment":       payment,
+				"balance_loan_amount": flt(balance, 2),
 			})
 
 
+# ── GL helpers ────────────────────────────────────────────────────────────────
+
+def make_disbursement_journal_entry(loan_doc):
+	"""
+	Dr: Loan Account (employee receivable)
+	Cr: Payment Account (bank / cash)
+	"""
+	if not loan_doc.loan_account or not loan_doc.payment_account:
+		frappe.msgprint(
+			_("Loan Account or Disbursement Account not set on Loan Type — skipping GL entry."),
+			alert=True, indicator="orange"
+		)
+		return None
+
+	company_currency = frappe.get_cached_value("Company", loan_doc.company, "default_currency")
+
+	je = frappe.new_doc("Journal Entry")
+	je.voucher_type  = "Journal Entry"
+	je.company       = loan_doc.company
+	je.posting_date  = loan_doc.disbursement_date
+	je.user_remark   = f"Loan disbursed to {loan_doc.employee_name} ({loan_doc.employee}) — {loan_doc.name}"
+	je.cheque_no     = loan_doc.name
+	je.cheque_date   = loan_doc.disbursement_date
+
+	# Debit: Loan (receivable) Account
+	je.append("accounts", {
+		"account":                    loan_doc.loan_account,
+		"debit_in_account_currency":  flt(loan_doc.loan_amount, 2),
+		"credit_in_account_currency": 0,
+		"party_type":                 "Employee",
+		"party":                      loan_doc.employee,
+		"reference_type":             "HR Loan",
+		"reference_name":             loan_doc.name,
+		"user_remark":                f"Loan disbursement — {loan_doc.name}",
+	})
+
+	# Credit: Bank / Cash Account
+	je.append("accounts", {
+		"account":                    loan_doc.payment_account,
+		"credit_in_account_currency": flt(loan_doc.loan_amount, 2),
+		"debit_in_account_currency":  0,
+		"reference_type":             "HR Loan",
+		"reference_name":             loan_doc.name,
+		"user_remark":                f"Loan disbursement — {loan_doc.name}",
+	})
+
+	je.insert(ignore_permissions=True)
+	je.submit()
+	return je.name
+
+
+def make_repayment_journal_entry(loan_name, amount, posting_date, salary_slip_name=None):
+	"""
+	Dr: Payment Account (bank / cash — money coming back via salary)
+	Cr: Loan Account (reducing the receivable)
+	Called from utils.py on each salary slip submission.
+	"""
+	loan = frappe.get_doc("HR Loan", loan_name)
+
+	if not loan.loan_account or not loan.payment_account:
+		return None
+
+	remark = f"Loan repayment — {loan_name}"
+	if salary_slip_name:
+		remark += f" via Salary Slip {salary_slip_name}"
+
+	je = frappe.new_doc("Journal Entry")
+	je.voucher_type = "Journal Entry"
+	je.company      = loan.company
+	je.posting_date = posting_date
+	je.user_remark  = remark
+	je.cheque_no    = salary_slip_name or loan_name
+	je.cheque_date  = posting_date
+
+	# Debit: Payment Account (salary deduction received)
+	je.append("accounts", {
+		"account":                    loan.payment_account,
+		"debit_in_account_currency":  flt(amount, 2),
+		"credit_in_account_currency": 0,
+		"reference_type":             "HR Loan",
+		"reference_name":             loan_name,
+		"user_remark":                remark,
+	})
+
+	# Credit: Loan Account (reducing outstanding)
+	je.append("accounts", {
+		"account":                    loan.loan_account,
+		"credit_in_account_currency": flt(amount, 2),
+		"debit_in_account_currency":  0,
+		"party_type":                 "Employee",
+		"party":                      loan.employee,
+		"reference_type":             "HR Loan",
+		"reference_name":             loan_name,
+		"user_remark":                remark,
+	})
+
+	je.insert(ignore_permissions=True)
+	je.submit()
+	return je.name
+
+
+def cancel_journal_entry(je_name):
+	"""Cancel and delete a submitted JE if it exists."""
+	if not je_name or not frappe.db.exists("Journal Entry", je_name):
+		return
+	try:
+		je = frappe.get_doc("Journal Entry", je_name)
+		if je.docstatus == 1:
+			je.cancel()
+	except Exception:
+		pass
+
+
+# ── Whitelisted API methods ───────────────────────────────────────────────────
+
 @frappe.whitelist()
 def reschedule(loan):
-	"""
-	Smart reschedule:
-	1. Keep all paid rows untouched.
-	2. Look at unpaid rows as entered by the user.
-	3. Remove rows where total_payment is 0 (redundant after manual edit).
-	4. Recalculate running balance across remaining unpaid rows.
-	5. If unpaid rows already sum to outstanding balance — close cleanly.
-	"""
-	doc = frappe.get_doc("HR Loan", loan)
-
+	doc         = frappe.get_doc("HR Loan", loan)
 	paid_rows   = [r for r in doc.repayment_schedule if r.is_paid]
-	unpaid_rows = [r for r in doc.repayment_schedule if not r.is_paid]
+	unpaid_rows = [r for r in doc.repayment_schedule if not r.is_paid and flt(r.total_payment) > 0]
 
 	if not unpaid_rows:
 		frappe.throw(_("No unpaid installments left to reschedule"))
-
-	# Remove rows with 0 or no amount (user deleted the content)
-	unpaid_rows = [r for r in unpaid_rows if flt(r.total_payment) > 0]
 
 	paid_amount       = flt(sum(flt(r.total_payment) for r in paid_rows), 2)
 	remaining_balance = flt(flt(doc.loan_amount) - paid_amount, 2)
@@ -80,68 +181,30 @@ def reschedule(loan):
 	if remaining_balance <= 0:
 		frappe.throw(_("No outstanding balance remaining"))
 
-	# Cap sum of unpaid rows at remaining balance
-	unpaid_sum = flt(sum(flt(r.total_payment) for r in unpaid_rows), 2)
-
-	if unpaid_sum > remaining_balance:
-		# Trim excess from the last row
-		excess = flt(unpaid_sum - remaining_balance, 2)
-		unpaid_rows[-1].total_payment = flt(flt(unpaid_rows[-1].total_payment) - excess, 2)
-		if unpaid_rows[-1].total_payment <= 0:
-			unpaid_rows = unpaid_rows[:-1]
-
-	# Recalculate running balance
 	running_balance = remaining_balance
-	for i, row in enumerate(unpaid_rows):
+	for row in unpaid_rows:
 		row.principal_amount    = flt(row.total_payment, 2)
 		row.interest_amount     = 0
 		running_balance         = flt(running_balance - row.total_payment, 2)
 		row.balance_loan_amount = flt(running_balance if running_balance > 0 else 0, 2)
 
-	# If unpaid rows don't cover full balance, add a final catch-all row
-	if running_balance > 0.01 and unpaid_rows:
-		last_date = getdate(unpaid_rows[-1].payment_date)
-		next_date = add_months(last_date, 1)
-		unpaid_rows_list = list(unpaid_rows)
-		# Append new row to document
-		new_row = doc.append("repayment_schedule", {
-			"payment_date":       next_date,
-			"principal_amount":   running_balance,
-			"interest_amount":    0,
-			"total_payment":      running_balance,
-			"balance_loan_amount": 0,
-		})
-		running_balance = 0
-
-	# Rebuild schedule: paid rows first, then cleaned unpaid rows
 	doc.set("repayment_schedule", [])
 	for r in paid_rows:
 		doc.append("repayment_schedule", {
-			"payment_date":       r.payment_date,
-			"principal_amount":   r.principal_amount,
-			"interest_amount":    r.interest_amount,
-			"total_payment":      r.total_payment,
+			"payment_date": r.payment_date, "principal_amount": r.principal_amount,
+			"interest_amount": r.interest_amount, "total_payment": r.total_payment,
 			"balance_loan_amount": r.balance_loan_amount,
-			"is_paid":            r.is_paid,
-			"paid_on":            r.paid_on,
-			"salary_slip":        r.salary_slip,
+			"is_paid": r.is_paid, "paid_on": r.paid_on, "salary_slip": r.salary_slip,
 		})
 	for r in unpaid_rows:
 		if flt(r.total_payment) > 0:
 			doc.append("repayment_schedule", {
-				"payment_date":       r.payment_date,
-				"principal_amount":   r.principal_amount,
-				"interest_amount":    r.interest_amount,
-				"total_payment":      r.total_payment,
+				"payment_date": r.payment_date, "principal_amount": r.principal_amount,
+				"interest_amount": r.interest_amount, "total_payment": r.total_payment,
 				"balance_loan_amount": r.balance_loan_amount,
 			})
 
-	# Update summary
-	unpaid_total = flt(sum(flt(r.total_payment) for r in unpaid_rows if flt(r.total_payment) > 0), 2)
-	doc.balance_amount           = flt(remaining_balance, 2)
-	doc.total_interest_payable   = 0
-	doc.monthly_repayment_amount = flt(unpaid_rows[0].total_payment, 2) if unpaid_rows else 0
-
+	doc.balance_amount = flt(remaining_balance, 2)
 	doc.save()
 	return doc.name
 
@@ -149,24 +212,44 @@ def reschedule(loan):
 @frappe.whitelist()
 def disburse(loan, disbursement_date=None):
 	if not ("HR Manager" in frappe.get_roles() or "System Manager" in frappe.get_roles()):
-		frappe.throw(_("Only HR Manager can disburse a loan"), frappe.PermissionError)
+		frappe.throw(_("Only HR Manager can disburse"), frappe.PermissionError)
+
 	doc = frappe.get_doc("HR Loan", loan)
 	if doc.status != "Sanctioned":
 		frappe.throw(_("Only Sanctioned loans can be disbursed"))
+
 	doc.disbursement_date = getdate(disbursement_date or today())
 	doc.generate_repayment_schedule()
 	doc.status = "Disbursed"
 	doc.save()
+
+	# Create GL Journal Entry
+	je_name = make_disbursement_journal_entry(doc)
+	if je_name:
+		frappe.db.set_value("HR Loan", loan, "disbursement_journal_entry", je_name)
+		frappe.msgprint(
+			_("Loan disbursed. Journal Entry {0} created.").format(
+				f'<a href="/app/journal-entry/{je_name}">{je_name}</a>'
+			),
+			title=_("GL Entry Created"), indicator="green"
+		)
+
 	return doc.name
 
 
 @frappe.whitelist()
 def cancel_loan(loan):
 	if not ("HR Manager" in frappe.get_roles() or "System Manager" in frappe.get_roles()):
-		frappe.throw(_("Only HR Manager can cancel a loan"), frappe.PermissionError)
+		frappe.throw(_("Only HR Manager can cancel"), frappe.PermissionError)
+
 	doc = frappe.get_doc("HR Loan", loan)
 	if doc.status not in ("Sanctioned", "Disbursed"):
 		frappe.throw(_("Only Sanctioned or Disbursed loans can be cancelled"))
+
+	# Cancel the disbursement JE
+	if doc.disbursement_journal_entry:
+		cancel_journal_entry(doc.disbursement_journal_entry)
+
 	doc.status = "Cancelled"
 	doc.save()
 	return doc.status

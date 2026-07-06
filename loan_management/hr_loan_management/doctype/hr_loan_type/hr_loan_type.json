@@ -10,7 +10,11 @@
   "is_active",
   "column_break_1",
   "max_loan_amount",
-  "rate_of_interest"
+  "rate_of_interest",
+  "section_accounts",
+  "loan_account",
+  "column_break_acc",
+  "payment_account"
  ],
  "fields": [
   {
@@ -44,6 +48,29 @@
    "label": "Rate of Interest (Yearly %)",
    "default": "0",
    "description": "Annual interest rate. Set 0 for interest-free loans."
+  },
+  {
+   "fieldname": "section_accounts",
+   "fieldtype": "Section Break",
+   "label": "Accounting"
+  },
+  {
+   "fieldname": "loan_account",
+   "fieldtype": "Link",
+   "label": "Loan Account (Asset)",
+   "options": "Account",
+   "description": "Debit on disbursement, Credit on repayment. e.g. Employee Loans - ATS"
+  },
+  {
+   "fieldname": "column_break_acc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "payment_account",
+   "fieldtype": "Link",
+   "label": "Disbursement / Bank Account",
+   "options": "Account",
+   "description": "Credit on disbursement, Debit on repayment. e.g. Cash - ATS"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -53,34 +80,9 @@
  "naming_rule": "By fieldname",
  "owner": "Administrator",
  "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "System Manager",
-   "share": 1,
-   "write": 1
-  },
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "HR Manager",
-   "share": 1,
-   "write": 1
-  },
-  {
-   "read": 1,
-   "role": "HR User"
-  }
+  {"create":1,"delete":1,"email":1,"export":1,"print":1,"read":1,"report":1,"role":"System Manager","share":1,"write":1},
+  {"create":1,"delete":1,"email":1,"export":1,"print":1,"read":1,"report":1,"role":"HR Manager","share":1,"write":1},
+  {"read":1,"role":"HR User"}
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
