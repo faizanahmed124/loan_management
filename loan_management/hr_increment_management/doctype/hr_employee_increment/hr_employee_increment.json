@@ -1,0 +1,170 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "naming_series:",
+ "creation": "2026-06-19 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "increment_title",
+  "effective_date",
+  "status",
+  "column_break_1",
+  "increment_type",
+  "increment_value",
+  "apply_to_field",
+  "section_filter",
+  "apply_to_employees",
+  "specific_employee",
+  "department_filter",
+  "section_employees",
+  "employees",
+  "section_summary",
+  "total_employees",
+  "column_break_2",
+  "total_increment_amount"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "HR-INCR-.YYYY.-",
+   "default": "HR-INCR-.YYYY.-",
+   "reqd": 1
+  },
+  {
+   "fieldname": "increment_title",
+   "fieldtype": "Data",
+   "label": "Increment Title",
+   "reqd": 1,
+   "in_list_view": 1,
+   "description": "e.g. Annual Increment 2026, Performance Raise Q2"
+  },
+  {
+   "fieldname": "effective_date",
+   "fieldtype": "Date",
+   "label": "Effective Date",
+   "default": "Today",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nPreviewed\nApplied",
+   "default": "Draft",
+   "read_only": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "increment_type",
+   "fieldtype": "Select",
+   "label": "Increment Type",
+   "options": "Percentage\nAmount",
+   "reqd": 1,
+   "default": "Percentage",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "increment_value",
+   "fieldtype": "Float",
+   "label": "Increment Value",
+   "reqd": 1,
+   "description": "Enter % (e.g. 10 for 10%) or fixed amount (e.g. 5000)"
+  },
+  {
+   "fieldname": "apply_to_field",
+   "fieldtype": "Select",
+   "label": "Apply To",
+   "options": "CTC\nBasic Salary",
+   "reqd": 1,
+   "default": "CTC",
+   "description": "CTC updates 'ctc' field. Basic Salary updates 'custom_basic_salary' field."
+  },
+  {
+   "fieldname": "section_filter",
+   "fieldtype": "Section Break",
+   "label": "Employee Selection"
+  },
+  {
+   "fieldname": "apply_to_employees",
+   "fieldtype": "Select",
+   "label": "Apply To Employees",
+   "options": "All Active Employees\nSpecific Employee\nBy Department",
+   "reqd": 1,
+   "default": "All Active Employees"
+  },
+  {
+   "fieldname": "specific_employee",
+   "fieldtype": "Link",
+   "label": "Specific Employee",
+   "options": "Employee",
+   "depends_on": "eval:doc.apply_to_employees=='Specific Employee'",
+   "mandatory_depends_on": "eval:doc.apply_to_employees=='Specific Employee'"
+  },
+  {
+   "fieldname": "department_filter",
+   "fieldtype": "Link",
+   "label": "Department",
+   "options": "Department",
+   "depends_on": "eval:doc.apply_to_employees=='By Department'",
+   "mandatory_depends_on": "eval:doc.apply_to_employees=='By Department'",
+   "description": "All active employees in this department will be included"
+  },
+  {
+   "fieldname": "section_employees",
+   "fieldtype": "Section Break",
+   "label": "Employee Preview"
+  },
+  {
+   "fieldname": "employees",
+   "fieldtype": "Table",
+   "label": "Employees",
+   "options": "HR Employee Increment Detail"
+  },
+  {
+   "fieldname": "section_summary",
+   "fieldtype": "Section Break",
+   "label": "Summary"
+  },
+  {
+   "fieldname": "total_employees",
+   "fieldtype": "Int",
+   "label": "Total Employees",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_increment_amount",
+   "fieldtype": "Currency",
+   "label": "Total Increment Amount",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "module": "HR Increment Management",
+ "name": "HR Employee Increment",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {"create":1,"delete":1,"email":1,"export":1,"print":1,"read":1,"report":1,"role":"System Manager","share":1,"write":1},
+  {"create":1,"delete":1,"email":1,"export":1,"print":1,"read":1,"report":1,"role":"HR Manager","share":1,"write":1},
+  {"email":1,"print":1,"read":1,"report":1,"role":"HR User"}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

@@ -1,0 +1,81 @@
+{
+ "actions": [],
+ "creation": "2026-06-19 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "employee",
+  "employee_name",
+  "department",
+  "current_value",
+  "increment_amount",
+  "new_value",
+  "applied"
+ ],
+ "fields": [
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "label": "Employee",
+   "options": "Employee",
+   "in_list_view": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "label": "Employee Name",
+   "fetch_from": "employee.employee_name",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Data",
+   "label": "Department",
+   "fetch_from": "employee.department",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "current_value",
+   "fieldtype": "Currency",
+   "label": "Current Value",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "increment_amount",
+   "fieldtype": "Currency",
+   "label": "Increment (+)",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "new_value",
+   "fieldtype": "Currency",
+   "label": "New Value",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "applied",
+   "fieldtype": "Check",
+   "label": "Applied",
+   "read_only": 1,
+   "default": "0",
+   "in_list_view": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "module": "HR Increment Management",
+ "name": "HR Employee Increment Detail",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
