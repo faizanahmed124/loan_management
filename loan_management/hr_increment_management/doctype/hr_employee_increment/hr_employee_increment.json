@@ -18,6 +18,7 @@
   "apply_to_employees",
   "specific_employee",
   "department_filter",
+  "employment_type",
   "section_employees",
   "employees",
   "section_summary",
@@ -120,6 +121,13 @@
    "description": "All active employees in this department will be included"
   },
   {
+   "fieldname": "employment_type",
+   "fieldtype": "Link",
+   "label": "Employment Type",
+   "options": "Employment Type",
+   "description": "Optional \u2014 leave blank to include all employment types"
+  },
+  {
    "fieldname": "section_employees",
    "fieldtype": "Section Break",
    "label": "Employee Preview"
@@ -159,9 +167,37 @@
  "naming_rule": "By \"Naming Series\" field",
  "owner": "Administrator",
  "permissions": [
-  {"create":1,"delete":1,"email":1,"export":1,"print":1,"read":1,"report":1,"role":"System Manager","share":1,"write":1},
-  {"create":1,"delete":1,"email":1,"export":1,"print":1,"read":1,"report":1,"role":"HR Manager","share":1,"write":1},
-  {"email":1,"print":1,"read":1,"report":1,"role":"HR User"}
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR User"
+  }
  ],
  "sort_field": "modified",
  "sort_order": "DESC",

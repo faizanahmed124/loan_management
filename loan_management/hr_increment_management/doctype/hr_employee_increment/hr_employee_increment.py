@@ -25,31 +25,43 @@ class HREmployeeIncrement(Document):
 # ── helpers ───────────────────────────────────────────────────────────────────
 
 def _get_employees(doc):
-	"""Return list of dicts {employee, employee_name, department} based on selection."""
+	"""Return list of dicts based on selection + optional employment_type filter."""
 	if doc.apply_to_employees == "Specific Employee":
 		if not doc.specific_employee:
 			frappe.throw(_("Please select a Specific Employee"))
 		emp = frappe.db.get_value(
 			"Employee", doc.specific_employee,
-			["name", "employee_name", "department", "status"],
+			["name", "employee_name", "department", "status", "employment_type"],
 			as_dict=True
 		)
 		if not emp:
 			frappe.throw(_("Employee {0} not found").format(doc.specific_employee))
 		if emp.status != "Active":
 			frappe.throw(_("Employee {0} is not Active").format(doc.specific_employee))
+		# Check employment type if filter is set
+		if doc.employment_type and emp.employment_type != doc.employment_type:
+			frappe.throw(
+				_("Employee {0} has Employment Type '{1}', not '{2}'").format(
+					doc.specific_employee, emp.employment_type, doc.employment_type
+				)
+			)
 		return [emp]
 
 	filters = {"status": "Active"}
+
 	if doc.apply_to_employees == "By Department":
 		if not doc.department_filter:
 			frappe.throw(_("Please select a Department"))
 		filters["department"] = doc.department_filter
 
+	# Employment Type filter (works with All Active AND By Department)
+	if doc.employment_type:
+		filters["employment_type"] = doc.employment_type
+
 	return frappe.get_all(
 		"Employee",
 		filters=filters,
-		fields=["name as employee", "employee_name", "department"],
+		fields=["name as employee", "employee_name", "department", "employment_type"],
 	)
 
 

@@ -12,6 +12,8 @@ frappe.ui.form.on("HR Employee Increment", {
 	apply_to_employees(frm) {
 		frm.set_value("employees", []);
 		frm.set_value("status", "Draft");
+		frm.set_value("employment_type", "");  // ← yeh line add karein
+
 	},
 
 	update_value_label(frm) {
