@@ -1,0 +1,493 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "naming_series:",
+ "creation": "2026-07-01 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "employee",
+  "employee_name",
+  "status",
+  "column_break_top",
+  "settlement_date",
+  "last_working_day",
+  "resignation_date",
+  "section_emp_info",
+  "employee_code",
+  "full_name",
+  "cader",
+  "department",
+  "section_name",
+  "shift_type",
+  "employment_type",
+  "column_break_emp",
+  "date_of_birth",
+  "pin_no",
+  "father_name",
+  "designation",
+  "scale",
+  "date_of_joining",
+  "probation_end_date",
+  "reports_to",
+  "gross_salary_header",
+  "section_salary",
+  "gross_salary_calc",
+  "basic_pay",
+  "daily_rate",
+  "working_days",
+  "current_month_salary",
+  "column_break_salary",
+  "leave_balance",
+  "leave_encashed",
+  "leave_amount",
+  "section_entitlements",
+  "overtime_hours",
+  "overtime_amount",
+  "bonus_month",
+  "bonus_amount",
+  "column_break_ent",
+  "notice_pay",
+  "other_adjustment",
+  "section_gratuity",
+  "employee_total_gratuity",
+  "consumed_gratuity_amount",
+  "column_break_grat",
+  "gratuity_years",
+  "net_gratuity_payable",
+  "section_loans",
+  "loan_details",
+  "total_loan_pending",
+  "section_deductions",
+  "loan_deduction_amount",
+  "advance_amount",
+  "remarks",
+  "section_net",
+  "net_payable",
+  "net_payable_in_words"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "HR-FNF-.YYYY.-",
+   "default": "HR-FNF-.YYYY.-",
+   "reqd": 1
+  },
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "label": "Employee",
+   "options": "Employee",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "label": "Employee Name",
+   "fetch_from": "employee.employee_name",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Draft\nVerified\nPaid",
+   "default": "Draft",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_top",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "settlement_date",
+   "fieldtype": "Date",
+   "label": "Settlement Date",
+   "default": "Today",
+   "reqd": 1
+  },
+  {
+   "fieldname": "last_working_day",
+   "fieldtype": "Date",
+   "label": "Last Working Day",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "resignation_date",
+   "fieldtype": "Date",
+   "label": "Resignation Date"
+  },
+  {
+   "fieldname": "section_emp_info",
+   "fieldtype": "Section Break",
+   "label": "Employee Information"
+  },
+  {
+   "fieldname": "employee_code",
+   "fieldtype": "Data",
+   "label": "Employee Code",
+   "fetch_from": "employee.name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "full_name",
+   "fieldtype": "Data",
+   "label": "Full Name",
+   "fetch_from": "employee.employee_name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cader",
+   "fieldtype": "Data",
+   "label": "Cader"
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "label": "Department",
+   "options": "Department",
+   "fetch_from": "employee.department",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_name",
+   "fieldtype": "Data",
+   "label": "Section",
+   "fetch_from": "employee.branch",
+   "read_only": 1
+  },
+  {
+   "fieldname": "shift_type",
+   "fieldtype": "Link",
+   "label": "Shift",
+   "options": "Shift Type"
+  },
+  {
+   "fieldname": "employment_type",
+   "fieldtype": "Link",
+   "label": "Employee Type",
+   "options": "Employment Type",
+   "fetch_from": "employee.employment_type",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_emp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "date_of_birth",
+   "fieldtype": "Date",
+   "label": "Date of Birth",
+   "fetch_from": "employee.date_of_birth",
+   "read_only": 1
+  },
+  {
+   "fieldname": "pin_no",
+   "fieldtype": "Data",
+   "label": "Pin #"
+  },
+  {
+   "fieldname": "father_name",
+   "fieldtype": "Data",
+   "label": "Father Name",
+   "fetch_from": "employee.custom_father_name_",
+   "read_only": 1
+  },
+  {
+   "fieldname": "designation",
+   "fieldtype": "Link",
+   "label": "Designation",
+   "options": "Designation",
+   "fetch_from": "employee.designation",
+   "read_only": 1
+  },
+  {
+   "fieldname": "scale",
+   "fieldtype": "Data",
+   "label": "Scale"
+  },
+  {
+   "fieldname": "date_of_joining",
+   "fieldtype": "Date",
+   "label": "Date of Joining",
+   "fetch_from": "employee.date_of_joining",
+   "read_only": 1
+  },
+  {
+   "fieldname": "probation_end_date",
+   "fieldtype": "Date",
+   "label": "Probation End Date"
+  },
+  {
+   "fieldname": "reports_to",
+   "fieldtype": "Link",
+   "label": "Report To",
+   "options": "Employee",
+   "fetch_from": "employee.reports_to",
+   "read_only": 1
+  },
+  {
+   "fieldname": "gross_salary_header",
+   "fieldtype": "Currency",
+   "label": "Gross Salary",
+   "fetch_from": "employee.ctc",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_salary",
+   "fieldtype": "Section Break",
+   "label": "Salary Calculation"
+  },
+  {
+   "fieldname": "gross_salary_calc",
+   "fieldtype": "Currency",
+   "label": "Gross Salary",
+   "description": "Auto-fetched from Employee CTC \u2014 editable",
+   "fetch_from": "employee.ctc",
+   "read_only": 1
+  },
+  {
+   "fieldname": "basic_pay",
+   "fieldtype": "Currency",
+   "label": "Basic Pay",
+   "description": "Auto-fetched from Employee Basic Salary \u2014 editable",
+   "fetch_from": "employee.custom_basic_pay",
+   "read_only": 1
+  },
+  {
+   "fieldname": "daily_rate",
+   "fieldtype": "Currency",
+   "label": "Daily Rate",
+   "read_only": 1,
+   "description": "Gross \u00f7 Days in Settlement Month"
+  },
+  {
+   "fieldname": "working_days",
+   "fieldtype": "Int",
+   "label": "Working Days"
+  },
+  {
+   "fieldname": "current_month_salary",
+   "fieldtype": "Currency",
+   "label": "Current Month Salary",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_salary",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "leave_balance",
+   "fieldtype": "Float",
+   "label": "Available Leave Balance (Days)",
+   "read_only": 1,
+   "description": "Auto-fetched from Leave Allocation"
+  },
+  {
+   "fieldname": "leave_encashed",
+   "fieldtype": "Float",
+   "label": "Leave Encashed (Days)",
+   "description": "Enter days to encash (cannot exceed balance)"
+  },
+  {
+   "fieldname": "leave_amount",
+   "fieldtype": "Currency",
+   "label": "Leave Encashment Amount",
+   "read_only": 1,
+   "description": "Leave Days \u00d7 (Gross \u00f7 30)"
+  },
+  {
+   "fieldname": "section_entitlements",
+   "fieldtype": "Section Break",
+   "label": "Entitlements"
+  },
+  {
+   "fieldname": "overtime_hours",
+   "fieldtype": "Float",
+   "label": "Overtime Hours"
+  },
+  {
+   "fieldname": "overtime_amount",
+   "fieldtype": "Currency",
+   "label": "Overtime Amount",
+   "description": "Enter manually"
+  },
+  {
+   "fieldname": "bonus_month",
+   "fieldtype": "Float",
+   "label": "Bonus Month",
+   "description": "e.g. 1.0 for 1 month bonus"
+  },
+  {
+   "fieldname": "bonus_amount",
+   "fieldtype": "Currency",
+   "label": "Bonus Amount",
+   "read_only": 1,
+   "description": "Basic Pay \u00d7 Bonus Month"
+  },
+  {
+   "fieldname": "column_break_ent",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "notice_pay",
+   "fieldtype": "Currency",
+   "label": "Notice Pay"
+  },
+  {
+   "fieldname": "other_adjustment",
+   "fieldtype": "Currency",
+   "label": "Other Adjustment",
+   "description": "Positive = add, Negative = deduct"
+  },
+  {
+   "fieldname": "section_loans",
+   "fieldtype": "Section Break",
+   "label": "Loan Details"
+  },
+  {
+   "fieldname": "loan_details",
+   "fieldtype": "Table",
+   "label": "Employee Loans",
+   "options": "HR FNF Loan Detail",
+   "read_only": 1,
+   "description": "Auto-fetched from HR Loan records"
+  },
+  {
+   "fieldname": "total_loan_pending",
+   "fieldtype": "Currency",
+   "label": "Total Loan Pending",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_deductions",
+   "fieldtype": "Section Break",
+   "label": "Deductions"
+  },
+  {
+   "fieldname": "loan_deduction_amount",
+   "fieldtype": "Currency",
+   "label": "Loan Deduction Amount",
+   "description": "Defaults to total loan pending \u2014 editable"
+  },
+  {
+   "fieldname": "advance_amount",
+   "fieldtype": "Currency",
+   "label": "Advance / Other Deduction"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
+  },
+  {
+   "fieldname": "section_net",
+   "fieldtype": "Section Break",
+   "label": "Net Payable"
+  },
+  {
+   "fieldname": "net_payable",
+   "fieldtype": "Currency",
+   "label": "Net Payable",
+   "read_only": 1,
+   "bold": 1
+  },
+  {
+   "fieldname": "net_payable_in_words",
+   "fieldtype": "Data",
+   "label": "Amount in Words",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_gratuity",
+   "fieldtype": "Section Break",
+   "label": "Gratuity"
+  },
+  {
+   "fieldname": "employee_total_gratuity",
+   "fieldtype": "Currency",
+   "label": "Total Gratuity (from Employee)",
+   "fetch_from": "employee.custom_total_gratuity",
+   "read_only": 1,
+   "description": "Auto-fetched from Employee record"
+  },
+  {
+   "fieldname": "consumed_gratuity_amount",
+   "fieldtype": "Currency",
+   "label": "Consumed Gratuity",
+   "fetch_from": "employee.custom_consumed_gratuity_amount",
+   "read_only": 1,
+   "description": "Auto-fetched from Employee record"
+  },
+  {
+   "fieldname": "column_break_grat",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "gratuity_years",
+   "fieldtype": "Float",
+   "label": "Gratuity Years",
+   "read_only": 1,
+   "description": "Auto-calculated: Joining to Last Working Day"
+  },
+  {
+   "fieldname": "net_gratuity_payable",
+   "fieldtype": "Currency",
+   "label": "Net Gratuity Payable",
+   "read_only": 1,
+   "bold": 1,
+   "description": "Total Gratuity - Consumed Gratuity"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "module": "HR FNF Management",
+ "name": "HR Full Final Settlement",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR User"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
