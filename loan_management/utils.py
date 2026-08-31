@@ -36,8 +36,8 @@ def mark_loan_repayments_paid(doc, method=None):
 		paid_amount = 0
 		for schedule_row in loan.repayment_schedule:
 			if schedule_row.name == row_name:
-				schedule_row.is_paid    = 1
-				schedule_row.paid_on    = doc.end_date
+				schedule_row.is_paid     = 1
+				schedule_row.paid_on     = doc.end_date
 				schedule_row.salary_slip = doc.name
 				paid_amount = flt(schedule_row.total_payment)
 
@@ -46,14 +46,18 @@ def mark_loan_repayments_paid(doc, method=None):
 			loan.status = "Closed"
 		loan.save(ignore_permissions=True)
 
+		# ── Gratuity: installment paid via salary → free that amount from consumed ──
+		if paid_amount > 0 and loan.loan_source == "Gratuity":
+			_reduce_consumed_gratuity(loan.employee, paid_amount)
+
 		# Create repayment GL Journal Entry
 		if paid_amount > 0:
 			try:
 				from loan_management.hr_loan_management.doctype.hr_loan.hr_loan import make_repayment_journal_entry
 				make_repayment_journal_entry(
-					loan_name    = loan_name,
-					amount       = paid_amount,
-					posting_date = doc.end_date,
+					loan_name        = loan_name,
+					amount           = paid_amount,
+					posting_date     = doc.end_date,
 					salary_slip_name = doc.name,
 				)
 			except Exception as e:
@@ -66,27 +70,77 @@ def unmark_loan_repayments_paid(doc, method=None):
 		return
 	loans = frappe.get_all(
 		"HR Loan",
-		filters={"employee": doc.employee, "status": ["in", ["Disbursed","Closed"]], "loan_source": ["in", list(SALARY_REPAYMENT_SOURCES)]},
+		filters={
+			"employee":    doc.employee,
+			"status":      ["in", ["Disbursed", "Closed"]],
+			"loan_source": ["in", list(SALARY_REPAYMENT_SOURCES)],
+		},
 		pluck="name",
 	)
 	for loan_name in loans:
 		loan    = frappe.get_doc("HR Loan", loan_name)
 		changed = False
+		reversed_amount = 0.0
+
 		for schedule_row in loan.repayment_schedule:
 			if schedule_row.salary_slip == doc.name:
-				loan.total_amount_paid = flt(loan.total_amount_paid) - flt(schedule_row.total_payment)
-				schedule_row.is_paid    = 0
-				schedule_row.paid_on    = None
-				schedule_row.salary_slip = None
+				reversed_amount             += flt(schedule_row.total_payment)
+				loan.total_amount_paid       = flt(loan.total_amount_paid) - flt(schedule_row.total_payment)
+				schedule_row.is_paid         = 0
+				schedule_row.paid_on         = None
+				schedule_row.salary_slip     = None
 				changed = True
+
 		if changed:
 			if loan.status == "Closed":
 				loan.status = "Disbursed"
 			loan.save(ignore_permissions=True)
 
+			# ── Gratuity: salary slip cancelled → restore consumed gratuity ──────
+			if reversed_amount > 0 and loan.loan_source == "Gratuity":
+				_restore_consumed_gratuity(loan.employee, reversed_amount)
+
 		# Cancel repayment JEs for this salary slip
 		_cancel_repayment_jes(loan_name, doc.name)
 
+
+# ── Gratuity helpers ──────────────────────────────────────────────────────────
+
+def _reduce_consumed_gratuity(employee, amount):
+	"""
+	Salary installment paid → reduce consumed gratuity by that amount
+	(the employee has repaid this portion, so it's freed from total gratuity).
+	"""
+	if not employee or not amount:
+		return
+	try:
+		current  = flt(frappe.db.get_value("Employee", employee, "custom_consumed_gratuity_amount") or 0)
+		new_val  = flt(current - amount, 2)
+		if new_val < 0:
+			new_val = 0
+		frappe.db.set_value("Employee", employee, "custom_consumed_gratuity_amount", new_val)
+		frappe.db.commit()
+	except Exception as e:
+		frappe.log_error(f"Gratuity reduce failed for {employee}: {e}", "Gratuity Update")
+
+
+def _restore_consumed_gratuity(employee, amount):
+	"""
+	Salary slip cancelled → restore consumed gratuity
+	(installment was reversed so gratuity becomes consumed again).
+	"""
+	if not employee or not amount:
+		return
+	try:
+		current = flt(frappe.db.get_value("Employee", employee, "custom_consumed_gratuity_amount") or 0)
+		new_val = flt(current + amount, 2)
+		frappe.db.set_value("Employee", employee, "custom_consumed_gratuity_amount", new_val)
+		frappe.db.commit()
+	except Exception as e:
+		frappe.log_error(f"Gratuity restore failed for {employee}: {e}", "Gratuity Update")
+
+
+# ── Internal helpers ──────────────────────────────────────────────────────────
 
 def _cancel_repayment_jes(loan_name, salary_slip_name):
 	"""Cancel any repayment JEs linked to a salary slip and loan."""
@@ -107,7 +161,11 @@ def _cancel_repayment_jes(loan_name, salary_slip_name):
 def _get_due_installments(employee, start_date, end_date):
 	loans = frappe.get_all(
 		"HR Loan",
-		filters={"employee": employee, "status": "Disbursed", "loan_source": ["in", list(SALARY_REPAYMENT_SOURCES)]},
+		filters={
+			"employee":    employee,
+			"status":      "Disbursed",
+			"loan_source": ["in", list(SALARY_REPAYMENT_SOURCES)],
+		},
 		pluck="name",
 	)
 	total = 0.0
@@ -115,7 +173,12 @@ def _get_due_installments(employee, start_date, end_date):
 	for loan_name in loans:
 		schedule = frappe.get_all(
 			"HR Loan Repayment Schedule",
-			filters={"parent": loan_name, "parenttype": "HR Loan", "is_paid": 0, "payment_date": ["between", [start_date, end_date]]},
+			filters={
+				"parent":       loan_name,
+				"parenttype":   "HR Loan",
+				"is_paid":      0,
+				"payment_date": ["between", [start_date, end_date]],
+			},
 			fields=["name", "total_payment"],
 		)
 		for row in schedule:
@@ -127,6 +190,6 @@ def _get_due_installments(employee, start_date, end_date):
 def _create_loan_salary_component():
 	component = frappe.new_doc("Salary Component")
 	component.salary_component = LOAN_DEDUCTION_COMPONENT
-	component.type              = "Deduction"
-	component.description       = "Auto-created by HR Loan app for employee loan EMI deductions."
+	component.type             = "Deduction"
+	component.description      = "Auto-created by HR Loan app for employee loan EMI deductions."
 	component.insert(ignore_permissions=True)

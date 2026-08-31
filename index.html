@@ -1,0 +1,778 @@
+{% set company = frappe.get_doc("Company", doc.company) %}
+{% set company_address = frappe.get_doc("Address", company.company_address) if company.company_address else None %}
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body, .po-root {
+    font-family: 'Outfit', sans-serif;
+    background: #fff;
+    color: #1c2333;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  /* ================= HEADER ================= */
+  .po-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: stretch;
+    background: #dddddd;
+    overflow: hidden;
+  }
+
+  .po-header-left {
+    padding: 24px 32px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex: 1;
+  }
+
+  /* LOGO */
+  .po-logo-box {
+    height: 85px;
+    width: auto;
+    object-fit: contain;
+    background: #fff;
+    padding: 6px;
+    border-radius: 8px;
+  }
+
+  .po-company-info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .po-company-name {
+    font-size: 24px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .po-company-address {
+    font-size: 11px;
+    color: #b9c8dc;
+    line-height: 1.7;
+  }
+
+  .po-header-right {
+    background-color: #dddddd;
+    padding: 28px 38px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-end;
+    min-width: 260px;
+    clip-path: polygon(22px 0%, 100% 0%, 100% 100%, 0% 100%);
+  }
+
+  .po-doc-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #0000FF;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+  }
+
+  .po-doc-no {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: #1c2022;
+    margin-top: 6px;
+  }
+
+  /* ================= META BAND ================= */
+  .po-meta-band {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    background: #f1f5fb;
+    border-bottom: 2px solid #1a56db;
+  }
+
+  .po-meta-cell {
+    padding: 14px 20px;
+    border-right: 1px solid #dbe4ef;
+  }
+
+  .po-meta-cell:last-child {
+    border-right: none;
+  }
+
+  .po-meta-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #1a56db;
+    margin-bottom: 4px;
+  }
+
+  .po-meta-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: #0d1b2a;
+  }
+
+  /* ================= BODY ================= */
+  .po-body {
+    padding: 26px 32px;
+  }
+
+  /* ================= PARTY SECTION ================= */
+  .po-parties {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+
+  .po-party-card {
+    border: 1px solid #dce5f0;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .po-party-header {
+    background: #C0C0C0;
+    padding: 10px 16px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #4169E1;
+  }
+
+  .po-party-body {
+    padding: 16px;
+    background: #f8fbff;
+  }
+
+  .po-party-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: #4169E1;
+    margin-bottom: 6px;
+  }
+
+  .po-party-detail {
+    font-size: 11px;
+    line-height: 1.8;
+    color: #4b607f;
+  }
+
+  /* ================= SECTION TITLE ================= */
+  .po-section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .po-section-title span {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #4b607f;
+  }
+
+  .po-section-title::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: #dce5f0;
+  }
+
+  /* ================= TABLE ================= */
+  .po-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 24px;
+    font-size: 12px;
+  }
+
+  .po-table thead tr {
+    background: #cecece;
+  }
+
+  .po-table thead th {
+    padding: 12px 14px;
+    text-align: left;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #4b607f;
+  }
+
+  .po-table thead th.r {
+    text-align: right;
+  }
+
+  .po-table thead th.c {
+    text-align: center;
+  }
+
+  .po-table tbody tr {
+    border-bottom: 1px solid #edf2f9;
+  }
+
+  .po-table tbody tr:nth-child(even) {
+    background: #C0C0C0;
+  }
+
+  .po-table tbody td {
+    padding: 11px 14px;
+    vertical-align: top;
+  }
+
+  .idx {
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    color: #7f95b3;
+  }
+
+  .item-name {
+    font-weight: 700;
+    color: #0d1b2a;
+    font-size: 13px;
+  }
+
+  .item-desc {
+    margin-top: 2px;
+    font-size: 11px;
+    color: #6b7f9b;
+  }
+
+  .num {
+    text-align: right;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .center {
+    text-align: center;
+  }
+
+  .uom-badge {
+    display: inline-block;
+    background: #C0C0C0;
+    color: #1a56db;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 4px;
+  }
+
+  .amount-cell {
+    text-align: right;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    color: #0d1b2a;
+  }
+
+  /* ================= BOTTOM ================= */
+  .po-bottom {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 24px;
+    align-items: start;
+  }
+
+  /* TERMS */
+  .po-terms {
+    border: 1px solid #dce5f0;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .po-terms-header {
+    background: #0d1b2a;
+    padding: 10px 16px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #9ab0cc;
+  }
+
+  .po-terms-body {
+    padding: 16px;
+    background: #f8fbff;
+    font-size: 11px;
+    line-height: 1.8;
+    color: #4b607f;
+  }
+
+  /* TOTALS */
+  .po-totals-inner {
+    border: 1px solid #dce5f0;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .po-totals-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 18px;
+    border-bottom: 1px solid #edf2f9;
+    background: #f8fbff;
+  }
+
+  .po-totals-row:last-child {
+    border-bottom: none;
+  }
+
+  .po-totals-row .tl {
+    font-size: 11px;
+    font-weight: 600;
+    color: #4b607f;
+    text-transform: uppercase;
+  }
+
+  .po-totals-row .tv {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: #0d1b2a;
+  }
+
+  .po-totals-row.grand {
+    background: #1a56db;
+  }
+
+  .po-totals-row.grand .tl {
+    color: #dbeafe;
+    letter-spacing: 2px;
+    font-weight: 700;
+  }
+
+  .po-totals-row.grand .tv {
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  /* IN WORDS */
+  .po-in-words {
+    margin-top: 16px;
+    padding: 14px 16px;
+    background: #eef4ff;
+    border-left: 4px solid #1a56db;
+    border-radius: 0 8px 8px 0;
+  }
+
+  .iw-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #1a56db;
+    margin-bottom: 4px;
+  }
+
+  .iw-value {
+    font-size: 12px;
+    font-style: italic;
+    color: #0d1b2a;
+    font-weight: 500;
+  }
+
+  /* ================= FOOTER ================= */
+  .po-footer {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid #dce5f0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+
+  .po-sig-block {
+    text-align: center;
+  }
+
+  .po-sig-line {
+    height: 1px;
+    background: #0d1b2a;
+    margin: 50px 16px 8px;
+  }
+
+  .po-sig-label {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #6b8aad;
+  }
+
+  @media print {
+    body {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+  }
+</style>
+
+<div class="po-root">
+
+  <!-- ================= HEADER ================= -->
+  <div class="po-header">
+
+    <div class="po-header-left">
+
+           <!-- COMPANY INFO -->
+      <div class="po-company-info">
+
+        <div class="po-company-name" style="padding:0;">
+    <img
+        src="http://10.1.2.99:8080/files/nsalogo.jpeg"
+        alt="NSA GROUP PRIVATE LIMITED"
+        style="height:65px; width:auto; display:block;"
+    >
+</div>
+
+        {% if company_address %}
+        <div class="po-company-address">
+          {{ company_address.address_line1 }}
+          {% if company_address.address_line2 %},
+            {{ company_address.address_line2 }}
+          {% endif %}
+          <br>
+
+          {{ company_address.city }}
+          {% if company_address.state %},
+            {{ company_address.state }}
+          {% endif %}
+          {{ company_address.pincode }}
+
+          <br>
+
+          {% if company.phone_no %}
+            Tel: {{ company.phone_no }}
+          {% endif %}
+
+          {% if company.email %}
+            | {{ company.email }}
+          {% endif %}
+        </div>
+        {% endif %}
+
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="po-header-right">
+      <div class="po-doc-title">Purchase Order</div>
+      <div class="po-doc-no">{{ doc.name }}</div>
+    </div>
+
+  </div>
+
+  <!-- ================= META BAND ================= -->
+  <div class="po-meta-band">
+
+    <div class="po-meta-cell">
+      <div class="po-meta-label">PO Date</div>
+      <div class="po-meta-value">{{ doc.transaction_date }}</div>
+    </div>
+
+    <div class="po-meta-cell">
+      <div class="po-meta-label">Required By</div>
+      <div class="po-meta-value">{{ doc.schedule_date or '—' }}</div>
+    </div>
+
+    <div class="po-meta-cell">
+      <div class="po-meta-label">Currency</div>
+      <div class="po-meta-value">{{ doc.currency }}</div>
+    </div>
+
+    <div class="po-meta-cell">
+      <div class="po-meta-label">Status</div>
+      <div class="po-meta-value">{{ doc.status }}</div>
+    </div>
+
+  </div>
+
+  <!-- ================= BODY ================= -->
+  <div class="po-body">
+
+    <!-- PARTIES -->
+    <div class="po-parties">
+
+      <!-- SUPPLIER -->
+      <div class="po-party-card">
+        <div class="po-party-header">Supplier</div>
+
+        <div class="po-party-body">
+
+          <div class="po-party-name">
+            {{ doc.supplier }}
+          </div>
+
+          <div class="po-party-detail">
+
+            {% if doc.supplier_name and doc.supplier_name != doc.supplier %}
+              {{ doc.supplier_name }}<br>
+            {% endif %}
+
+            {% if doc.supplier_address %}
+              {% set sup_addr = frappe.get_doc("Address", doc.supplier_address) %}
+
+              {{ sup_addr.address_line1 }}
+
+              {% if sup_addr.address_line2 %}
+                , {{ sup_addr.address_line2 }}
+              {% endif %}
+
+              <br>
+
+              {{ sup_addr.city }}
+
+              {% if sup_addr.state %}
+                , {{ sup_addr.state }}
+              {% endif %}
+
+            {% endif %}
+
+          </div>
+        </div>
+      </div>
+
+      <!-- SHIP TO -->
+      <div class="po-party-card">
+
+        <div class="po-party-header">
+          Ship To / Billing
+        </div>
+
+        <div class="po-party-body">
+
+          <div class="po-party-name">
+            NSA GROUP PRIVATE LIMITED
+          </div>
+
+          <div class="po-party-detail">
+
+            {% if doc.shipping_address %}
+              {% set ship_addr = frappe.get_doc("Address", doc.shipping_address) %}
+
+              {{ ship_addr.address_line1 }}
+
+              {% if ship_addr.address_line2 %}
+                , {{ ship_addr.address_line2 }}
+              {% endif %}
+
+              <br>
+
+              {{ ship_addr.city }}
+
+              {% if ship_addr.state %}
+                , {{ ship_addr.state }}
+              {% endif %}
+
+            {% else %}
+
+              {{ doc.company }}
+
+            {% endif %}
+
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ================= ITEMS ================= -->
+    <div class="po-section-title">
+      <span>Order Items</span>
+    </div>
+
+    <table class="po-table">
+
+      <thead>
+        <tr>
+          <th style="width:4%">#</th>
+          <th style="width:30%">Item</th>
+          <th style="width:24%">Description</th>
+          <th class="c" style="width:8%">Qty</th>
+          <th class="c" style="width:8%">UOM</th>
+          <th class="r" style="width:13%">Rate</th>
+          <th class="r" style="width:13%">Amount</th>
+        </tr>
+      </thead>
+
+      <tbody>
+
+        {% for item in doc.items %}
+
+        <tr>
+
+          <td class="idx">
+            {{ loop.index }}
+          </td>
+
+          <td>
+            <div class="item-name">
+              {{ item.item_code }}
+            </div>
+
+            {% if item.item_name and item.item_name != item.item_code %}
+              <div class="item-desc">
+                {{ item.item_name }}
+              </div>
+            {% endif %}
+          </td>
+
+          <td>
+            <div class="item-desc">
+              {{ item.description or '—' }}
+            </div>
+          </td>
+
+          <td class="num center">
+            {{ item.qty }}
+          </td>
+
+          <td class="center">
+            <span class="uom-badge">
+              {{ item.uom }}
+            </span>
+          </td>
+
+          <td class="num">
+            {{ frappe.utils.fmt_money(item.rate, currency=doc.currency) }}
+          </td>
+
+          <td class="amount-cell">
+            {{ frappe.utils.fmt_money(item.amount, currency=doc.currency) }}
+          </td>
+
+        </tr>
+
+        {% endfor %}
+
+      </tbody>
+    </table>
+
+    <!-- ================= BOTTOM ================= -->
+    <div class="po-bottom">
+
+      <!-- TERMS -->
+      <div>
+
+        {% if doc.terms %}
+
+        <div class="po-terms">
+
+          <div class="po-terms-header">
+            Terms & Conditions
+          </div>
+
+          <div class="po-terms-body">
+            {{ doc.terms }}
+          </div>
+
+        </div>
+
+        {% endif %}
+
+      </div>
+
+      <!-- TOTALS -->
+      <div>
+
+        <div class="po-section-title">
+          <span>Summary</span>
+        </div>
+
+        <div class="po-totals-inner">
+
+          <div class="po-totals-row">
+            <span class="tl">Total Qty</span>
+            <span class="tv">{{ doc.total_qty }}</span>
+          </div>
+
+          <div class="po-totals-row">
+            <span class="tl">Net Total</span>
+            <span class="tv">
+              {{ frappe.utils.fmt_money(doc.net_total, currency=doc.currency) }}
+            </span>
+          </div>
+
+          {% if doc.total_taxes_and_charges %}
+          <div class="po-totals-row">
+            <span class="tl">Taxes</span>
+            <span class="tv">
+              {{ frappe.utils.fmt_money(doc.total_taxes_and_charges, currency=doc.currency) }}
+            </span>
+          </div>
+          {% endif %}
+
+          {% if doc.discount_amount %}
+          <div class="po-totals-row">
+            <span class="tl">Discount</span>
+            <span class="tv">
+              - {{ frappe.utils.fmt_money(doc.discount_amount, currency=doc.currency) }}
+            </span>
+          </div>
+          {% endif %}
+
+          <div class="po-totals-row grand">
+            <span class="tl">Grand Total</span>
+            <span class="tv">
+              {{ frappe.utils.fmt_money(doc.grand_total, currency=doc.currency) }}
+            </span>
+          </div>
+
+        </div>
+
+        <!-- IN WORDS -->
+        <div class="po-in-words">
+
+          <div class="iw-label">
+            Amount in Words
+          </div>
+
+          <div class="iw-value">
+            {{ doc.in_words }}
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ================= FOOTER ================= -->
+    <div class="po-footer">
+
+      <div class="po-sig-block">
+        <div class="po-sig-line"></div>
+        <div class="po-sig-label">Prepared By</div>
+      </div>
+
+      <div class="po-sig-block">
+        <div class="po-sig-line"></div>
+        <div class="po-sig-label">Approved By</div>
+      </div>
+
+      <div class="po-sig-block">
+        <div class="po-sig-line"></div>
+        <div class="po-sig-label">Supplier Acknowledgement</div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
