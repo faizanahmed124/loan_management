@@ -36,10 +36,11 @@ class HRLoan(Document):
 		balance = loan
 		month   = 0
 		while balance > 0.009:
-			month        += 1
-			payment       = flt(min(inst, balance), 2)
-			balance       = flt(balance - payment, 2)
-			if balance < 0: balance = 0
+			month   += 1
+			payment  = flt(min(inst, balance), 2)
+			balance  = flt(balance - payment, 2)
+			if balance < 0:
+				balance = 0
 			self.append("repayment_schedule", {
 				"payment_date":        add_months(self.disbursement_date, month),
 				"principal_amount":    payment,
@@ -60,8 +61,18 @@ def make_disbursement_journal_entry(loan_doc):
 	je.user_remark  = f"Loan disbursed to {loan_doc.employee_name} ({loan_doc.employee}) — {loan_doc.name}"
 	je.cheque_no    = loan_doc.name
 	je.cheque_date  = loan_doc.disbursement_date
-	je.append("accounts", {"account": loan_doc.loan_account, "debit_in_account_currency": flt(loan_doc.loan_amount, 2), "credit_in_account_currency": 0, "party_type": "Employee", "party": loan_doc.employee, "reference_type": "HR Loan", "reference_name": loan_doc.name})
-	je.append("accounts", {"account": loan_doc.payment_account, "credit_in_account_currency": flt(loan_doc.loan_amount, 2), "debit_in_account_currency": 0, "reference_type": "HR Loan", "reference_name": loan_doc.name})
+	je.append("accounts", {
+		"account":                    loan_doc.loan_account,
+		"debit_in_account_currency":  flt(loan_doc.loan_amount, 2),
+		"credit_in_account_currency": 0,
+		"party_type":                 "Employee",
+		"party":                      loan_doc.employee,
+	})
+	je.append("accounts", {
+		"account":                    loan_doc.payment_account,
+		"credit_in_account_currency": flt(loan_doc.loan_amount, 2),
+		"debit_in_account_currency":  0,
+	})
 	je.insert(ignore_permissions=True)
 	je.submit()
 	return je.name
@@ -79,8 +90,18 @@ def make_repayment_journal_entry(loan_name, amount, posting_date, salary_slip_na
 	je.user_remark  = remark
 	je.cheque_no    = salary_slip_name or loan_name
 	je.cheque_date  = posting_date
-	je.append("accounts", {"account": loan.payment_account, "debit_in_account_currency": flt(amount, 2), "credit_in_account_currency": 0, "reference_type": "HR Loan", "reference_name": loan_name})
-	je.append("accounts", {"account": loan.loan_account, "credit_in_account_currency": flt(amount, 2), "debit_in_account_currency": 0, "party_type": "Employee", "party": loan.employee, "reference_type": "HR Loan", "reference_name": loan_name})
+	je.append("accounts", {
+		"account":                    loan.payment_account,
+		"debit_in_account_currency":  flt(amount, 2),
+		"credit_in_account_currency": 0,
+	})
+	je.append("accounts", {
+		"account":                    loan.loan_account,
+		"credit_in_account_currency": flt(amount, 2),
+		"debit_in_account_currency":  0,
+		"party_type":                 "Employee",
+		"party":                      loan.employee,
+	})
 	je.insert(ignore_permissions=True)
 	je.submit()
 	return je.name
@@ -99,49 +120,28 @@ def cancel_journal_entry(je_name):
 
 @frappe.whitelist()
 def recalculate_schedule_from_row(loan, row_name, new_amount):
-	"""
-	Server-side: when user edits a row's amount:
-	  1. Update that row
-	  2. Delete all unpaid rows after it
-	  3. Regenerate rows from remaining balance using monthly_installment_amount
-	"""
 	doc          = frappe.get_doc("HR Loan", loan)
 	new_amount   = flt(new_amount)
 	monthly_inst = flt(doc.monthly_installment_amount)
 	total_loan   = flt(doc.loan_amount)
-
 	target_idx = next((i for i, r in enumerate(doc.repayment_schedule) if r.name == row_name), None)
 	if target_idx is None:
 		frappe.throw(_("Row not found in repayment schedule"))
-
-	# Max allowed for this row
 	paid_total  = flt(sum(flt(r.total_payment) for r in doc.repayment_schedule if r.is_paid), 2)
 	prev_unpaid = flt(sum(flt(r.total_payment) for i, r in enumerate(doc.repayment_schedule) if not r.is_paid and i < target_idx), 2)
 	max_allowed = flt(total_loan - paid_total - prev_unpaid, 2)
-
 	if new_amount > max_allowed: new_amount = max_allowed
 	if new_amount < 0: new_amount = 0
-
-	# Update target row
 	target_row = doc.repayment_schedule[target_idx]
 	target_row.total_payment       = flt(new_amount, 2)
 	target_row.principal_amount    = flt(new_amount, 2)
 	target_row.interest_amount     = 0
 	remaining = flt(max_allowed - new_amount, 2)
 	target_row.balance_loan_amount = flt(remaining if remaining > 0 else 0, 2)
-
-	# Keep rows up to and including target
 	kept_rows = []
 	for i, row in enumerate(doc.repayment_schedule):
 		if i <= target_idx:
-			kept_rows.append({
-				"payment_date": row.payment_date, "principal_amount": row.principal_amount,
-				"interest_amount": row.interest_amount, "total_payment": row.total_payment,
-				"balance_loan_amount": row.balance_loan_amount,
-				"is_paid": row.is_paid, "paid_on": row.paid_on, "salary_slip": row.salary_slip,
-			})
-
-	# Generate new rows for remaining balance
+			kept_rows.append({"payment_date": row.payment_date, "principal_amount": row.principal_amount, "interest_amount": row.interest_amount, "total_payment": row.total_payment, "balance_loan_amount": row.balance_loan_amount, "is_paid": row.is_paid, "paid_on": row.paid_on, "salary_slip": row.salary_slip})
 	new_rows = []
 	if remaining > 0.009 and monthly_inst > 0:
 		balance   = remaining
@@ -151,17 +151,10 @@ def recalculate_schedule_from_row(loan, row_name, new_amount):
 			last_date = add_months(last_date, 1)
 			balance   = flt(balance - payment, 2)
 			if balance < 0: balance = 0
-			new_rows.append({
-				"payment_date": last_date, "principal_amount": payment,
-				"interest_amount": 0, "total_payment": payment,
-				"balance_loan_amount": flt(balance, 2),
-			})
-
-	# Rebuild schedule
+			new_rows.append({"payment_date": last_date, "principal_amount": payment, "interest_amount": 0, "total_payment": payment, "balance_loan_amount": flt(balance, 2)})
 	doc.set("repayment_schedule", [])
 	for r in kept_rows + new_rows:
 		doc.append("repayment_schedule", r)
-
 	doc.balance_amount = flt(remaining, 2)
 	doc.save()
 	return doc.name
@@ -169,7 +162,7 @@ def recalculate_schedule_from_row(loan, row_name, new_amount):
 
 @frappe.whitelist()
 def reschedule(loan):
-	doc = frappe.get_doc("HR Loan", loan)
+	doc         = frappe.get_doc("HR Loan", loan)
 	paid_rows   = [r for r in doc.repayment_schedule if r.is_paid]
 	unpaid_rows = [r for r in doc.repayment_schedule if not r.is_paid and flt(r.total_payment) > 0]
 	if not unpaid_rows:
@@ -225,3 +218,32 @@ def cancel_loan(loan):
 	doc.status = "Cancelled"
 	doc.save()
 	return doc.status
+
+
+def update_employee_loan_summary(employee):
+	"""Sync all HR Loans of an employee to the Employee's custom_loan_summary table."""
+	if not employee:
+		return
+	try:
+		emp = frappe.get_doc("Employee", employee)
+		loans = frappe.get_all(
+			"HR Loan",
+			filters={"employee": employee, "status": ["in", ["Sanctioned","Disbursed","Closed"]]},
+			fields=["name","disbursement_date","loan_amount","repayment_periods",
+					"monthly_installment_amount","balance_amount","status"],
+			order_by="creation asc",
+		)
+		emp.set("custom_loan_summary", [])
+		for loan in loans:
+			emp.append("custom_loan_summary", {
+				"loan":               loan.name,
+				"loan_date":          loan.disbursement_date,
+				"loan_amount":        loan.loan_amount,
+				"installments_count": loan.repayment_periods,
+				"installment_amount": loan.monthly_installment_amount,
+				"remaining_balance":  loan.balance_amount,
+				"loan_status":        loan.status,
+			})
+		emp.save(ignore_permissions=True)
+	except Exception as e:
+		frappe.log_error(f"Loan summary update failed for {employee}: {e}", "HR Loan Summary")
