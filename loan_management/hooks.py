@@ -22,7 +22,11 @@ doc_events = {
 		"on_cancel": "loan_management.utils.unmark_loan_repayments_paid",
 	}
 }
-
+scheduler_events = {
+    "daily": [
+        "loan_management.hr_bonus_management.tasks.recalculate_bonus_daily"
+    ]
+}
 # required_apps = []
 
 # Each item in the list will be shown as an app in the apps page
