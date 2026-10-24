@@ -3,7 +3,7 @@ import math
 import frappe
 from frappe import _
 from frappe.model.document import Document
-from frappe.utils import add_months, flt, getdate, today
+from frappe.utils import add_months, cint, flt, getdate, today
 
 # Loan sources settled in one lump sum (no monthly repayment schedule)
 LUMP_SUM_SOURCES = ("Bonus", "Encashment")
@@ -19,6 +19,9 @@ class HRLoan(Document):
 			frappe.db.set_value("HR Loan Application", self.loan_application, "loan", None)
 		if self.disbursement_journal_entry:
 			cancel_journal_entry(self.disbursement_journal_entry)
+		# Deleting an active loan must give back Gratuity / Encashment it consumed
+		if self.status in ("Sanctioned", "Disbursed"):
+			reverse_employee_balances(self)
 
 	def calculate_repayment_summary(self):
 		loan = flt(self.loan_amount)
@@ -175,6 +178,18 @@ def _update_encashment(employee, amount):
 		frappe.db.commit()
 	except Exception as e:
 		frappe.log_error(f"Encashment update failed for {employee}: {e}", "Encashment Update")
+
+
+def reverse_employee_balances(doc):
+	"""Undo the Gratuity / Encashment amounts this loan consumed (on cancel or delete)."""
+	if doc.loan_source == "Gratuity":
+		deduct_gratuity(doc.employee, -flt(doc.loan_amount))
+		if cint(doc.get("also_deduct_from_bonus_encashment")):
+			installment = flt(doc.get("monthly_installment_amount") or doc.loan_amount)
+			_update_encashment(doc.employee, -installment)
+
+	if doc.loan_source == "Encashment":
+		_update_encashment(doc.employee, -flt(doc.loan_amount))
 
 
 def update_employee_loan_summary(employee):
@@ -343,7 +358,6 @@ def disburse(loan, disbursement_date=None):
 		)
 	return doc.name
 
-
 @frappe.whitelist()
 def cancel_loan(loan):
 	if not ("HR Manager" in frappe.get_roles() or "System Manager" in frappe.get_roles()):
@@ -356,13 +370,7 @@ def cancel_loan(loan):
 	if doc.disbursement_journal_entry:
 		cancel_journal_entry(doc.disbursement_journal_entry)
 
-	# ── Reverse Gratuity deduction ────────────────────────────────────────────
-	if doc.loan_source == "Gratuity":
-		deduct_gratuity(doc.employee, -flt(doc.loan_amount))
-
-	# ── Reverse Encashment advance ────────────────────────────────────────────
-	if doc.loan_source == "Encashment":
-		_update_encashment(doc.employee, -flt(doc.loan_amount))
+	reverse_employee_balances(doc)
 
 	doc.status = "Cancelled"
 	doc.save()

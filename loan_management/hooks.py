@@ -16,6 +16,9 @@ required_apps = ["hrms"]
 after_install = "loan_management.install.after_install"
 
 doc_events = {
+	"Employee": {
+		"validate": "loan_management.utils.set_encashment_remaining",
+	},
 	"Salary Slip": {
 		"validate": "loan_management.utils.add_loan_deductions",
 		"on_submit": "loan_management.utils.mark_loan_repayments_paid",

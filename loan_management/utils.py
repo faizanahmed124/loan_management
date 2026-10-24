@@ -193,3 +193,12 @@ def _create_loan_salary_component():
 	component.type             = "Deduction"
 	component.description      = "Auto-created by HR Loan app for employee loan EMI deductions."
 	component.insert(ignore_permissions=True)
+
+
+def set_encashment_remaining(doc, method=None):
+	"""Employee validate — keep Encashment Remaining = Leave Encashment − Advance Taken."""
+	if not doc.meta.has_field("custom_remaining_amount"):
+		return
+	doc.custom_remaining_amount = flt(
+		max(flt(doc.get("custom_encashment_amount")) - flt(doc.get("custom_advance_amount")), 0), 2
+	)

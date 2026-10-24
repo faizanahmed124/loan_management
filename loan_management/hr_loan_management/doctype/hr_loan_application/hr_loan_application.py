@@ -220,21 +220,25 @@ def cancel_application(loan_application):
 		frappe.throw(_("Already cancelled"))
 	if doc.loan and frappe.db.get_value("HR Loan", doc.loan, "status") == "Disbursed":
 		frappe.throw(_("Cannot cancel: Loan is already Disbursed. Cancel the Loan first."))
-	if doc.loan and frappe.db.exists("HR Loan", doc.loan):
+	# If the Loan was already cancelled, cancel_loan has reversed the balances — don't do it twice
+	loan_active = bool(doc.loan) and frappe.db.get_value("HR Loan", doc.loan, "status") not in (None, "Cancelled")
+	if loan_active:
 		frappe.db.set_value("HR Loan", doc.loan, "status", "Cancelled")
 
 	# ── Reverse gratuity consumed on cancellation ─────────────────────────────
-	if doc.from_gratuity and doc.loan:
+	if doc.from_gratuity and loan_active:
 		_update_consumed_gratuity(doc.employee, -flt(doc.loan_amount))
+		if cint(doc.get("also_deduct_from_bonus_encashment")):
+			installment = flt(doc.get("monthly_installment_amount") or doc.loan_amount)
+			_update_encashment_advance(doc.employee, -installment)
 
 	# ── Reverse encashment advance on cancellation ────────────────────────────
-	if doc.get("from_encashment") and doc.loan:
+	if doc.get("from_encashment") and loan_active:
 		_update_encashment_advance(doc.employee, -flt(doc.loan_amount))
 
 	doc.status = "Cancelled"
 	doc.save()
 	return doc.status
-
 
 @frappe.whitelist()
 def create_loan(loan_application):
