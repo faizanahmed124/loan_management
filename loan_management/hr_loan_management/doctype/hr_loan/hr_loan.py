@@ -338,10 +338,7 @@ def disburse(loan, disbursement_date=None):
 	doc.status = "Disbursed"
 	doc.save()
 
-	# ── Gratuity: update consumed gratuity if applicable ─────────────────────
-	if doc.loan_source == "Gratuity":
-		deduct_gratuity(doc.employee, flt(doc.loan_amount))
-
+	# Gratuity is already consumed in create_loan (HR Loan Application) — don't add it again here
 
 	# ── Update employee loan summary ─────────────────────────────────────────
 	update_employee_loan_summary(doc.employee)
