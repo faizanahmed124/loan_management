@@ -45,6 +45,8 @@
   "section_entitlements",
   "overtime_hours",
   "overtime_amount",
+  "less_duty_hours",
+  "less_duty_hours_amount",
   "bonus_month",
   "bonus_amount",
   "column_break_ent",
@@ -250,7 +252,7 @@
    "fieldname": "gross_salary_calc",
    "fieldtype": "Currency",
    "label": "Gross Salary",
-   "description": "Auto-fetched from Employee CTC \u2014 editable",
+   "description": "Auto-fetched from Employee CTC — editable",
    "fetch_from": "employee.ctc",
    "read_only": 1
   },
@@ -258,7 +260,7 @@
    "fieldname": "basic_pay",
    "fieldtype": "Currency",
    "label": "Basic Pay",
-   "description": "Auto-fetched from Employee Basic Salary \u2014 editable",
+   "description": "Auto-fetched from Employee Basic Salary — editable",
    "fetch_from": "employee.custom_basic_pay",
    "read_only": 1
   },
@@ -267,12 +269,14 @@
    "fieldtype": "Currency",
    "label": "Daily Rate",
    "read_only": 1,
-   "description": "Gross \u00f7 Days in Settlement Month"
+   "description": "Gross ÷ Days in Settlement Month"
   },
   {
    "fieldname": "working_days",
-   "fieldtype": "Int",
-   "label": "Working Days"
+   "fieldtype": "Float",
+   "label": "Working Days",
+   "precision": "1",
+   "description": "Auto: all attendance days except Absent (Holiday, Leave etc. included; Half Day = 0.5) from the 1st of the Last Working Day's month to the Last Working Day; editable"
   },
   {
    "fieldname": "current_month_salary",
@@ -302,7 +306,7 @@
    "fieldtype": "Currency",
    "label": "Leave Encashment Amount",
    "read_only": 1,
-   "description": "Leave Days \u00d7 (Gross \u00f7 30)"
+   "description": "Leave Days × (Gross ÷ 30)"
   },
   {
    "fieldname": "section_entitlements",
@@ -318,20 +322,34 @@
    "fieldname": "overtime_amount",
    "fieldtype": "Currency",
    "label": "Overtime Amount",
-   "description": "Enter manually"
+   "description": "Auto-calculated from attendance (same formula as Salary Slip); editable"
+  },
+  {
+   "fieldname": "less_duty_hours",
+   "fieldtype": "Float",
+   "label": "Less Duty Hours",
+   "read_only": 1,
+   "description": "Permanent only. Net of overtime, as in Salary Slip"
+  },
+  {
+   "fieldname": "less_duty_hours_amount",
+   "fieldtype": "Currency",
+   "label": "Less Duty Hours Amount",
+   "read_only": 1,
+   "no_copy": 1
   },
   {
    "fieldname": "bonus_month",
    "fieldtype": "Float",
    "label": "Bonus Month",
-   "description": "e.g. 1.0 for 1 month bonus"
+   "description": "Bonus = Basic Pay ÷ 12 × Bonus Month (enter manually)"
   },
   {
    "fieldname": "bonus_amount",
    "fieldtype": "Currency",
    "label": "Bonus Amount",
    "read_only": 1,
-   "description": "Basic Pay \u00d7 Bonus Month"
+   "description": "Basic Pay ÷ 12 × Bonus Month"
   },
   {
    "fieldname": "column_break_ent",
@@ -376,7 +394,7 @@
    "fieldname": "loan_deduction_amount",
    "fieldtype": "Currency",
    "label": "Loan Deduction Amount",
-   "description": "Defaults to total loan pending \u2014 editable"
+   "description": "Defaults to total loan pending — editable"
   },
   {
    "fieldname": "advance_amount",
@@ -414,10 +432,9 @@
   {
    "fieldname": "employee_total_gratuity",
    "fieldtype": "Currency",
-   "label": "Total Gratuity (from Employee)",
-   "fetch_from": "employee.custom_total_gratuity",
+   "label": "Total Gratuity (CTC × 80% × Years)",
    "read_only": 1,
-   "description": "Auto-fetched from Employee record"
+   "description": "Auto-calculated from Gratuity Years"
   },
   {
    "fieldname": "consumed_gratuity_amount",
@@ -435,16 +452,14 @@
    "fieldname": "gratuity_years",
    "fieldtype": "Float",
    "label": "Gratuity Years",
-   "read_only": 1,
-   "description": "Auto-calculated: Joining to Last Working Day"
+   "description": "Confirmation (else joining) to Last Working Day, if Gratuity is allowed. Edit to recalculate the amount"
   },
   {
    "fieldname": "net_gratuity_payable",
    "fieldtype": "Currency",
    "label": "Net Gratuity Payable",
-   "read_only": 1,
    "bold": 1,
-   "description": "Total Gratuity - Consumed Gratuity"
+   "description": "Total Gratuity − Consumed if Gratuity is allowed for the employee, else 0; editable"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -489,5 +504,6 @@
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
- "track_changes": 1
+ "track_changes": 1,
+ "modified": "2026-10-29 18:00:00.000000"
 }

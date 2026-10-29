@@ -3,8 +3,19 @@
 frappe.ui.form.on("HR Full Final Settlement", {
 
 	refresh(frm) {
+		frm.trigger("lock_overtime");
 		frm.trigger("set_indicator");
 		frm.trigger("add_buttons");
+	},
+
+	// Overtime fields are read-only unless Allow Overtime is ticked on the Employee
+	lock_overtime(frm) {
+		if (!frm.doc.employee) return;
+		frappe.db.get_value("Employee", frm.doc.employee, "custom_allow_overtime").then((r) => {
+			const allowed = !!(r.message && r.message.custom_allow_overtime);
+			["overtime_hours", "overtime_amount"].forEach((f) => frm.set_df_property(f, "read_only", allowed ? 0 : 1));
+			frm.set_df_property("overtime_hours", "description", allowed ? "" : __("Overtime is not applicable for this employee"));
+		});
 	},
 
 	set_indicator(frm) {
@@ -41,6 +52,13 @@ frappe.ui.form.on("HR Full Final Settlement", {
 					},
 				});
 			}).addClass("btn-primary");
+		}
+
+		// ── Recalculate final-month salary + overtime ─────────────────────────
+		if (frm.doc.employee && frm.doc.last_working_day && frm.doc.status === "Draft") {
+			frm.add_custom_button(__("Recalculate Salary & Overtime"), () => {
+				frm.call("recalculate").then(() => { frm.dirty(); frm.refresh_fields(); });
+			});
 		}
 
 		// ── Verify ────────────────────────────────────────────────────────────
@@ -82,6 +100,7 @@ frappe.ui.form.on("HR Full Final Settlement", {
 
 	// ── Auto-fetch salary when employee is selected ───────────────────────────
 	employee(frm) {
+		frm.trigger("lock_overtime");
 		if (frm.doc.employee) {
 			// Fetch CTC and Basic from employee
 			frappe.db.get_value("Employee", frm.doc.employee, ["ctc", "custom_basic_pay"], (r) => {
@@ -99,16 +118,25 @@ frappe.ui.form.on("HR Full Final Settlement", {
 	basic_pay(frm)              { frm.trigger("recalc_bonus"); },
 	settlement_date(frm)        { frm.trigger("recalc_daily_rate"); },
 	working_days(frm)           { frm.trigger("recalc_current_month"); },
+	// Final-month working days + overtime come from the server (same formula as Salary Slip)
+	last_working_day(frm)       { frm.trigger("server_recalc"); },
 	leave_encashed(frm)         { frm.trigger("recalc_leave"); },
 	bonus_month(frm)            { frm.trigger("recalc_bonus"); },
-	last_working_day(frm)       { frm.trigger("recalc_gratuity"); },
-	date_of_joining(frm)        { frm.trigger("recalc_gratuity"); },
 	overtime_amount(frm)        { frm.trigger("recalc_net"); },
 	notice_pay(frm)             { frm.trigger("recalc_net"); },
 	other_adjustment(frm)       { frm.trigger("recalc_net"); },
-	gratuity_amount(frm)        { frm.trigger("recalc_net"); },
+	net_gratuity_payable(frm)   { frm.trigger("recalc_net"); },
+	// Editing the years re-prices the gratuity (CTC × 80% × rounded years) on the server
+	gratuity_years(frm) {
+		if (frm.doc.employee) frm.call("recalculate_gratuity_if_allowed").then(() => frm.refresh_fields());
+	},
 	loan_deduction_amount(frm)  { frm.trigger("recalc_net"); },
 	advance_amount(frm)         { frm.trigger("recalc_net"); },
+
+	server_recalc(frm) {
+		if (!frm.doc.employee || !frm.doc.last_working_day) return;
+		frm.call("recalculate").then(() => frm.refresh_fields());
+	},
 
 	recalc_all(frm) {
 		frm.trigger("recalc_daily_rate");
@@ -117,8 +145,9 @@ frappe.ui.form.on("HR Full Final Settlement", {
 
 	recalc_daily_rate(frm) {
 		const gross = flt(frm.doc.gross_salary_calc);
-		if (!gross || !frm.doc.settlement_date) return;
-		const d = frappe.datetime.str_to_obj(frm.doc.settlement_date);
+		const month_ref = frm.doc.last_working_day || frm.doc.settlement_date;
+		if (!gross || !month_ref) return;
+		const d = frappe.datetime.str_to_obj(month_ref);
 		const days_in_month = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
 		const daily = flt(gross / days_in_month, 2);
 		frm.set_value("daily_rate", daily);
@@ -128,7 +157,7 @@ frappe.ui.form.on("HR Full Final Settlement", {
 	recalc_current_month(frm) {
 		const daily = flt(frm.doc.daily_rate);
 		const days  = flt(frm.doc.working_days);
-		if (daily && days) frm.set_value("current_month_salary", flt(daily * days, 2));
+		frm.set_value("current_month_salary", flt(daily * days, 2));
 		frm.trigger("recalc_net");
 	},
 
@@ -154,19 +183,7 @@ frappe.ui.form.on("HR Full Final Settlement", {
 	recalc_bonus(frm) {
 		const basic = flt(frm.doc.basic_pay);
 		const mo    = flt(frm.doc.bonus_month);
-		if (basic && mo) frm.set_value("bonus_amount", flt(basic * mo, 2));
-		frm.trigger("recalc_net");
-	},
-
-	recalc_gratuity(frm) {
-		if (!frm.doc.date_of_joining || !frm.doc.last_working_day) return;
-		const doj  = frappe.datetime.str_to_obj(frm.doc.date_of_joining);
-		const lwd  = frappe.datetime.str_to_obj(frm.doc.last_working_day);
-		if (lwd <= doj) return;
-		const years = flt((lwd - doj) / (365.25 * 24 * 3600 * 1000), 2);
-		frm.set_value("gratuity_years", years);
-		const gross = flt(frm.doc.gross_salary_calc);
-		if (gross && years) frm.set_value("gratuity_amount", flt(gross * 0.8 * years, 0));
+		frm.set_value("bonus_amount", basic && mo ? flt(basic / 12 * mo, 2) : 0);
 		frm.trigger("recalc_net");
 	},
 
@@ -175,9 +192,10 @@ frappe.ui.form.on("HR Full Final Settlement", {
 			+ flt(frm.doc.leave_amount)
 			+ flt(frm.doc.overtime_amount)
 			+ flt(frm.doc.bonus_amount)
-			+ flt(frm.doc.gratuity_amount)
+			+ flt(frm.doc.net_gratuity_payable)
 			+ flt(frm.doc.notice_pay)
 			+ flt(frm.doc.other_adjustment)
+			- flt(frm.doc.less_duty_hours_amount)
 			- flt(frm.doc.loan_deduction_amount)
 			- flt(frm.doc.advance_amount);
 
